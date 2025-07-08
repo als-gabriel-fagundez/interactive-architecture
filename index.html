@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía Interactiva de Arquitectura .NET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Slate & Sky -->
+    <!-- Application Structure Plan: La aplicación está diseñada como un panel de control interactivo con una barra de navegación lateral fija y un área de contenido principal. Esta estructura permite a los usuarios navegar fácilmente entre los conceptos clave de la arquitectura sin un desplazamiento lineal. Las secciones principales (Inicio, Arquitectura, Flujo de Petición, Componentes, Implementación) agrupan lógicamente el contenido del informe. La interactividad, como hacer clic en las capas de la arquitectura o seguir el flujo de una petición paso a paso, está diseñada para transformar la lectura pasiva en una exploración activa, mejorando la retención y la comprensión. Se eligió esta estructura porque la documentación técnica densa se beneficia enormemente de la visualización y la capacidad de profundizar en los detalles bajo demanda, en lugar de presentar toda la información a la vez. -->
+    <!-- Visualization & Content Choices: 
+        - Clean Architecture Layers -> Goal: Organize/Inform -> Viz: Diagrama de círculos concéntricos con HTML/CSS -> Interaction: Clic en una capa para ver detalles. Justification: Representa visualmente la regla de dependencia, un concepto central. Library: Vanilla JS + Tailwind.
+        - Anatomy of a Request -> Goal: Process/Change -> Viz: Diagrama de flujo vertical paso a paso -> Interaction: Botones para avanzar/retroceder, resaltando el paso activo. Justification: Descompone un proceso complejo en pasos digeribles. Library: Vanilla JS + Tailwind.
+        - Tech Stack -> Goal: Inform -> Viz: Cuadrícula de tarjetas. -> Interaction: Hover sutil. Justification: Más atractivo visualmente que una tabla estándar. Library: Tailwind.
+        - MediatR Pipeline -> Goal: Process/Organize -> Viz: Diagrama de pipeline lineal. -> Interaction: Hover para ver detalles del comportamiento. Justification: Aclara el patrón de cadena de responsabilidad. Library: HTML/CSS + JS.
+        - Exception Mapping -> Goal: Compare -> Viz: Tabla estilizada. -> Interaction: Hover en filas para resaltar. Justification: Facilita la referencia rápida. Library: Tailwind.
+        - Code Snippets -> Goal: Inform -> Viz: Bloques de código con resaltado simulado. -> Interaction: Botón para copiar al portapapeles. Justification: Mejora la utilidad para los desarrolladores. Library: Vanilla JS.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .nav-link { transition: all 0.2s ease-in-out; }
+        .nav-link.active { background-color: #0c4a6e; color: white; }
+        .nav-link:not(.active):hover { background-color: #f1f5f9; }
+        .code-block {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .code-block .token-keyword { color: #7dd3fc; }
+        .code-block .token-type { color: #6ee7b7; }
+        .code-block .token-comment { color: #64748b; }
+        .code-block .token-string { color: #fde047; }
+        .layer { cursor: pointer; transition: all 0.3s ease; }
+        .layer:hover, .layer.selected { transform: scale(1.05); filter: brightness(1.1); }
+        .flow-step { border-left-color: #cbd5e1; transition: all 0.3s ease; }
+        .flow-step.active { border-left-color: #0ea5e9; background-color: #f0f9ff; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+    <div class="flex h-screen bg-slate-100">
+        <aside class="w-64 bg-white shadow-md flex-shrink-0 flex flex-col">
+            <div class="h-16 flex items-center justify-center bg-sky-900 text-white">
+                <h1 class="text-xl font-bold">Arquitectura .NET</h1>
+            </div>
+            <nav id="main-nav" class="flex-grow p-4 space-y-2">
+                <a href="#home" data-target="home" class="nav-link flex items-center p-3 rounded-lg text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
+                    Inicio
+                </a>
+                <a href="#architecture" data-target="architecture" class="nav-link flex items-center p-3 rounded-lg text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V5a1 1 0 00-.553-.894l-4-2A1 1 0 0011 3v14zM4 5a1 1 0 00-1 1v10a1 1 0 001 1h5V5H4z" /></svg>
+                    Arquitectura
+                </a>
+                <a href="#request-flow" data-target="request-flow" class="nav-link flex items-center p-3 rounded-lg text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" /></svg>
+                    Flujo de Petición
+                </a>
+                <a href="#components" data-target="components" class="nav-link flex items-center p-3 rounded-lg text-slate-700 font-medium">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                    Componentes Clave
+                </a>
+                <a href="#implementation" data-target="implementation" class="nav-link flex items-center p-3 rounded-lg text-slate-700 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 01-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                    Implementación
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 lg:p-10 overflow-y-auto">
+            <div id="home" class="content-section">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Guía de Arquitectura Estándar para Proyectos .NET</h2>
+                <p class="text-lg text-slate-600 mb-6">Esta guía interactiva establece el estándar de arquitectura de software para el desarrollo de APIs en .NET. El objetivo es formalizar un enfoque unificado que asegure la creación de sistemas mantenibles, escalables, testeables y robustos.</p>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold mb-3">Filosofía Arquitectónica</h3>
+                    <p class="mb-4">La adhesión a esta guía asegura una reducción del coste total de propiedad, facilita la colaboración entre equipos y acelera la incorporación de nuevos desarrolladores. La arquitectura se basa en pilares tecnológicos y filosóficos clave para alcanzar estos objetivos.</p>
+                     <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
+                            <h4 class="font-bold text-sky-800">Clean Architecture</h4>
+                            <p class="text-sm text-sky-700">Proporciona una clara separación de responsabilidades, aislando la lógica de negocio de los detalles de infraestructura.</p>
+                        </div>
+                        <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
+                            <h4 class="font-bold text-sky-800">CQRS con MediatR</h4>
+                            <p class="text-sm text-sky-700">Desacopla la lógica de negocio y optimiza las operaciones de lectura y escritura para un mejor rendimiento y mantenibilidad.</p>
+                        </div>
+                        <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
+                            <h4 class="font-bold text-sky-800">Minimal APIs</h4>
+                            <p class="text-sm text-sky-700">Ofrece una capa de presentación ligera, rápida y moderna, alineada con la naturaleza de CQRS.</p>
+                        </div>
+                         <div class="bg-sky-50 p-4 rounded-lg border border-sky-200">
+                            <h4 class="font-bold text-sky-800">Entity Framework Core</h4>
+                            <p class="text-sm text-sky-700">Se utiliza directamente, sin repositorios genéricos, para un acceso a datos potente y optimizado.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="architecture" class="content-section">
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">El Mandato de Clean Architecture</h2>
+                <p class="mb-8 text-slate-600">La arquitectura se adhiere estrictamente a los principios de Clean Architecture. Este modelo organiza el software en capas concéntricas, donde la regla de dependencia es innegociable: las dependencias solo pueden apuntar hacia adentro. Haz clic en una capa para explorar sus responsabilidades.</p>
+                
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <div id="clean-arch-diagram" class="flex-1 flex justify-center items-center p-4">
+                        <div class="relative w-96 h-96">
+                            <div data-layer="domain" class="layer absolute top-0 left-0 w-96 h-96 rounded-full bg-sky-600 flex justify-center items-center text-white font-bold text-xl shadow-lg">
+                                <div data-layer="application" class="layer w-72 h-72 rounded-full bg-sky-500 flex justify-center items-center shadow-md">
+                                    <div data-layer="infrastructure" class="layer w-48 h-48 rounded-full bg-sky-400 flex justify-center items-center shadow-md">
+                                        <div data-layer="presentation" class="layer w-24 h-24 rounded-full bg-sky-300 flex justify-center items-center text-slate-800 text-sm text-center shadow-inner">Presentación</div>
+                                    </div>
+                                </div>
+                            </div>
+                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                                <span class="absolute" style="top: -10rem; left: -1rem;">Dominio</span>
+                                <span class="absolute text-sm" style="top: -6.5rem; left: -1.5rem;">Aplicación</span>
+                                <span class="absolute text-sm" style="top: -3rem; left: -2.5rem;">Infraestructura</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="layer-details" class="lg:w-1/3 bg-white p-6 rounded-lg shadow-lg">
+                        <h3 id="layer-title" class="text-2xl font-bold text-sky-800 mb-3">Selecciona una capa</h3>
+                        <p id="layer-description" class="text-slate-600">Pasa el cursor o haz clic sobre una de las capas del diagrama para ver su descripción detallada, sus responsabilidades y cómo se relaciona con las demás.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="request-flow" class="content-section">
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Anatomía de una Petición HTTP</h2>
+                <p class="mb-8 text-slate-600">Para sintetizar la arquitectura, esta sección traza el viaje de una única petición `POST` a través de todas las capas y componentes del sistema. Utiliza los botones para navegar paso a paso por el flujo y observar cómo cada parte de la arquitectura cumple su función.</p>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div id="flow-steps-container" class="flex-1 space-y-2"></div>
+                    <div class="md:w-1/3">
+                         <div class="bg-white p-6 rounded-lg shadow-lg sticky top-6">
+                            <h3 id="flow-step-title" class="text-xl font-bold text-sky-800 mb-3">Inicio del Flujo</h3>
+                            <p id="flow-step-description" class="text-slate-600 min-h-[100px]">Haz clic en "Siguiente" para comenzar el recorrido por el flujo de una petición.</p>
+                             <div class="mt-6 flex justify-between">
+                                <button id="prev-step-btn" class="bg-slate-300 hover:bg-slate-400 text-slate-800 font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50" disabled>Anterior</button>
+                                <button id="next-step-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">Siguiente</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="components" class="content-section">
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Componentes Clave y Asuntos Transversales</h2>
+                <p class="mb-8 text-slate-600">La robustez de la arquitectura no solo reside en sus capas, sino también en cómo maneja responsabilidades comunes a toda la aplicación, como la validación, autorización, logging y manejo de errores. Estos "asuntos transversales" se gestionan de forma centralizada para garantizar la consistencia y reducir el código repetitivo.</p>
+
+                <div class="bg-white p-6 rounded-lg shadow mb-8">
+                    <h3 class="text-2xl font-semibold mb-3">Pipeline de Comportamientos de MediatR</h3>
+                    <p class="mb-6">El pipeline de MediatR es un mecanismo de "cadena de responsabilidad" que intercepta cada comando y consulta. Esto permite inyectar lógica transversal de forma limpia y automática antes de que la petición llegue a su manejador.</p>
+                    <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-2 justify-between items-center text-center text-sm font-medium">
+                        <div class="p-3 rounded-full bg-rose-100 text-rose-800 w-40">Excepciones</div>
+                        <div class="text-slate-400 font-bold">&rarr;</div>
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-800 w-40">Autorización</div>
+                        <div class="text-slate-400 font-bold">&rarr;</div>
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-800 w-40">Validación</div>
+                        <div class="text-slate-400 font-bold">&rarr;</div>
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-800 w-40">Rendimiento</div>
+                        <div class="text-slate-400 font-bold">&rarr;</div>
+                        <div class="p-3 rounded-full bg-green-100 text-green-800 w-40">Logging</div>
+                        <div class="text-slate-400 font-bold">&rarr;</div>
+                        <div class="p-4 rounded-lg bg-sky-800 text-white font-bold w-40">Manejador</div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-2xl font-semibold mb-3">Manejo Centralizado de Excepciones</h3>
+                    <p class="mb-6">Un middleware personalizado intercepta todas las excepciones y las mapea a respuestas HTTP estandarizadas. Esto asegura que los clientes de la API reciban errores consistentes y predecibles.</p>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipo de Excepción</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Código de Estado HTTP</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Condición de Disparo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-slate-200">
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">ValidationException</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">400 Bad Request</td>
+                                    <td class="px-6 py-4">Los datos de entrada fallaron la validación de FluentValidation.</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">ForbiddenAccessException</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">403 Forbidden</td>
+                                    <td class="px-6 py-4">El usuario no tiene los permisos necesarios para la acción.</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">NotFoundException</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">404 Not Found</td>
+                                    <td class="px-6 py-4">El recurso solicitado no existe en la base de datos.</td>
+                                </tr>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="px-6 py-4 whitespace-nowrap font-mono text-sm">Exception</td>
+                                    <td class="px-6 py-4 whitespace-nowrap font-semibold">500 Internal Server Error</td>
+                                    <td class="px-6 py-4">Ocurrió un error inesperado y no controlado.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="implementation" class="content-section">
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Implementación y Estructura</h2>
+                <p class="mb-8 text-slate-600">Esta sección proporciona guías prácticas y ejemplos de código para aplicar la arquitectura. Incluye la estructura canónica de la solución que debe seguirse en todos los proyectos y fragmentos de código clave para la configuración y la lógica de negocio.</p>
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-2xl font-semibold mb-3">Estructura Canónica de la Solución</h3>
+                            <p class="mb-4">Todo nuevo proyecto debe adherirse a esta estructura de carpetas para garantizar la consistencia y el cumplimiento de la Clean Architecture.</p>
+                            <div class="code-block">
+                                <pre><code>YourSolution.sln
+└── src/
+    ├── <span class="token-type">Domain/</span>
+    │   ├── Entities/
+    │   └── Enums/
+    ├── <span class="token-type">Application/</span>
+    │   ├── Common/
+    │   └── TodoItems/
+    ├── <span class="token-type">Infrastructure/</span>
+    │   ├── Data/
+    │   └── Services/
+    └── <span class="token-type">Web/</span>
+        ├── Endpoints/
+        └── Program.cs</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-2xl font-semibold mb-3">Ejemplo: Entidad de Dominio</h3>
+                            <p class="mb-4">Las entidades de dominio son POCOs que encapsulan datos y lógica de negocio. Este ejemplo muestra cómo una entidad puede generar un evento de dominio.</p>
+                             <div class="relative">
+                                <button class="copy-btn absolute top-2 right-2 bg-slate-600 hover:bg-slate-500 text-white p-2 rounded-md text-xs">Copiar</button>
+                                <div class="code-block">
+                                <pre><code><span class="token-keyword">public class</span> <span class="token-type">TodoItem</span> : <span class="token-type">BaseAuditableEntity</span>
+{
+    <span class="token-keyword">public</span> <span class="token-type">string</span>? Title { <span class="token-keyword">get</span>; <span class="token-keyword">set</span>; }
+    <span class="token-keyword">public</span> <span class="token-type">bool</span> Done { <span class="token-keyword">get</span>; <span class="token-keyword">private set</span>; }
+
+    <span class="token-keyword">public void</span> MarkAsDone()
+    {
+        <span class="token-keyword">if</span> (!Done)
+        {
+            Done = <span class="token-keyword">true</span>;
+            AddDomainEvent(<span class="token-keyword">new</span> TodoItemCompletedEvent(<span class="token-keyword">this</span>));
+        }
+    }
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        const layerDetailsData = {
+            domain: {
+                title: 'Capa de Dominio (Domain)',
+                description: 'Es el núcleo absoluto de la aplicación. Contiene las entidades de negocio, objetos de valor y eventos de dominio. Representa las reglas de negocio de la empresa, es pura y no tiene dependencias de otros proyectos o frameworks externos.'
+            },
+            application: {
+                title: 'Capa de Aplicación (Application)',
+                description: 'Es la capa de orquestación. Define los casos de uso a través de Comandos y Consultas (CQRS). Contiene la lógica de negocio específica de la aplicación y define las interfaces para las dependencias externas (como bases de datos o servicios de notificación), pero no conoce sus implementaciones.'
+            },
+            infrastructure: {
+                title: 'Capa de Infraestructura (Infrastructure)',
+                description: 'Es la capa de implementación. Provee las clases concretas que implementan las interfaces definidas en la capa de Aplicación. Aquí residen todos los detalles técnicos: acceso a bases de datos con EF Core, clientes para APIs de terceros, servicios de correo, etc.'
+            },
+            presentation: {
+                title: 'Capa de Presentación (Presentation)',
+                description: 'Es el punto de entrada a la aplicación. En esta arquitectura, es una API web construida con Minimal APIs. Su única responsabilidad es recibir peticiones HTTP, despacharlas a la capa de Aplicación a través de MediatR y formatear la respuesta.'
+            }
+        };
+
+        const flowStepsData = [
+            { title: '1. Petición HTTP', description: 'La petición llega al servidor y es procesada por el pipeline de middlewares de ASP.NET Core.' },
+            { title: '2. Interceptor de Petición', description: 'El `RequestInterceptor` asigna un `TraceId` único a la petición para facilitar el seguimiento y la depuración.' },
+            { title: '3. Autenticación y Autorización', description: 'Los middlewares de seguridad verifican la identidad del usuario y sus permisos básicos.' },
+            { title: '4. Enrutamiento a Endpoint', description: 'La petición se enruta al endpoint de Minimal API correspondiente según la URL y el método HTTP.' },
+            { title: '5. Despacho con MediatR', description: 'El endpoint crea un objeto `Command` o `Query` y lo envía a MediatR para su procesamiento.' },
+            { title: '6. Pipeline de MediatR', description: 'La petición atraviesa los comportamientos del pipeline: Logging, Autorización, Validación, etc.' },
+            { title: '7. Ejecución del Manejador', description: 'Si todas las validaciones pasan, la petición llega al `CommandHandler` o `QueryHandler` específico.' },
+            { title: '8. Lógica de Negocio', description: 'El manejador ejecuta la lógica de negocio, interactuando con la base de datos a través de EF Core si es necesario.' },
+            { title: '9. Interceptores de EF Core', description: 'Antes de guardar, los interceptores de EF Core se activan para tareas como auditoría o despacho de eventos de dominio.' },
+            { title: '10. Respuesta', description: 'El manejador devuelve un resultado, que el endpoint formatea en una respuesta HTTP exitosa (ej. 200 OK, 201 Created).' },
+            { title: '11. Manejo de Excepciones', description: 'Si en cualquier punto ocurre una excepción, el `CustomExceptionHandler` la intercepta y genera una respuesta de error estandarizada.' },
+        ];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('#main-nav a');
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function updateView(hash) {
+                const target = (hash || window.location.hash || '#home').substring(1);
+                
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.target === target);
+                });
+
+                contentSections.forEach(section => {
+                    section.classList.toggle('active', section.id === target);
+                });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = e.currentTarget.dataset.target;
+                    history.pushState(null, '', `#${targetId}`);
+                    updateView(`#${targetId}`);
+                });
+            });
+
+            window.addEventListener('popstate', () => updateView());
+            updateView();
+
+            const layers = document.querySelectorAll('#clean-arch-diagram .layer');
+            const layerTitle = document.getElementById('layer-title');
+            const layerDescription = document.getElementById('layer-description');
+
+            layers.forEach(layer => {
+                layer.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const layerId = e.currentTarget.dataset.layer;
+                    layers.forEach(l => l.classList.remove('selected', 'ring-4', 'ring-offset-4', 'ring-sky-400'));
+                    e.currentTarget.classList.add('selected', 'ring-4', 'ring-offset-4', 'ring-sky-400');
+                    const data = layerDetailsData[layerId];
+                    if(data){
+                        layerTitle.textContent = data.title;
+                        layerDescription.textContent = data.description;
+                    }
+                });
+            });
+
+            const flowStepsContainer = document.getElementById('flow-steps-container');
+            const flowStepTitle = document.getElementById('flow-step-title');
+            const flowStepDescription = document.getElementById('flow-step-description');
+            const nextBtn = document.getElementById('next-step-btn');
+            const prevBtn = document.getElementById('prev-step-btn');
+            let currentStep = -1;
+
+            flowStepsData.forEach((step, index) => {
+                const stepEl = document.createElement('div');
+                stepEl.id = `flow-step-${index}`;
+                stepEl.className = 'flow-step border-l-4 p-4 bg-white rounded-r-lg shadow-sm';
+                stepEl.innerHTML = `<h4 class="font-semibold">${step.title}</h4>`;
+                flowStepsContainer.appendChild(stepEl);
+            });
+            
+            function updateFlowStep() {
+                prevBtn.disabled = currentStep <= 0;
+                nextBtn.disabled = currentStep >= flowStepsData.length - 1;
+
+                if (currentStep >= 0 && currentStep < flowStepsData.length) {
+                    const data = flowStepsData[currentStep];
+                    flowStepTitle.textContent = data.title;
+                    flowStepDescription.textContent = data.description;
+
+                    document.querySelectorAll('.flow-step').forEach((el, index) => {
+                        el.classList.toggle('active', index === currentStep);
+                        if (index === currentStep) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    });
+                }
+            }
+            
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < flowStepsData.length - 1) {
+                    currentStep++;
+                    updateFlowStep();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    updateFlowStep();
+                }
+            });
+
+            const copyButtons = document.querySelectorAll('.copy-btn');
+            copyButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const codeBlock = e.currentTarget.nextElementSibling.querySelector('code');
+                    const textToCopy = codeBlock.innerText;
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        e.currentTarget.textContent = '¡Copiado!';
+                        setTimeout(() => {
+                            e.currentTarget.textContent = 'Copiar';
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Error al copiar: ', err);
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>
