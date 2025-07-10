@@ -41,6 +41,8 @@
         .code-block .token-string { color: #fde047; }
         .layer { cursor: pointer; transition: all 0.3s ease; }
         .layer:hover, .layer.selected { transform: scale(1.05); filter: brightness(1.1); }
+        .layer-label { transition: all 0.3s ease; transform: translateX(-50%); }
+        .diagram-container:hover .layer-label { transform: scale(1.05) translateX(-50%); }
         .flow-step { border-left-color: #cbd5e1; transition: all 0.3s ease; }
         .flow-step.active { border-left-color: #0ea5e9; background-color: #f0f9ff; }
     </style>
@@ -109,18 +111,24 @@
                 
                 <div class="flex flex-col lg:flex-row gap-8">
                     <div id="clean-arch-diagram" class="flex-1 flex justify-center items-center p-4">
-                        <div class="relative w-96 h-96">
-                            <div data-layer="domain" class="layer absolute top-0 left-0 w-96 h-96 rounded-full bg-sky-600 flex justify-center items-center text-white font-bold text-xl shadow-lg">
-                                <div data-layer="application" class="layer w-72 h-72 rounded-full bg-sky-500 flex justify-center items-center shadow-md">
-                                    <div data-layer="infrastructure" class="layer w-48 h-48 rounded-full bg-sky-400 flex justify-center items-center shadow-md">
-                                        <div data-layer="presentation" class="layer w-24 h-24 rounded-full bg-sky-300 flex justify-center items-center text-slate-800 text-sm text-center shadow-inner">Presentación</div>
+                        <div class="relative w-96 h-96 diagram-container">
+                            <div data-layer="presentation" class="layer absolute top-0 left-0 w-96 h-96 rounded-full bg-sky-300 flex justify-center items-center text-slate-800 font-bold text-xl shadow-lg">
+                                <div data-layer="infrastructure" class="layer w-72 h-72 rounded-full bg-sky-400 flex justify-center items-center shadow-md">
+                                    <div data-layer="application" class="layer w-48 h-48 rounded-full bg-sky-500 flex justify-center items-center shadow-md">
+                                        <div data-layer="domain" class="layer w-24 h-24 rounded-full bg-sky-600 flex justify-center items-center text-white text-sm text-center shadow-inner">Dominio</div>
                                     </div>
                                 </div>
                             </div>
-                             <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                                <span class="absolute" style="top: -10rem; left: -1rem;">Dominio</span>
-                                <span class="absolute text-sm" style="top: -6.5rem; left: -1.5rem;">Aplicación</span>
-                                <span class="absolute text-sm" style="top: -3rem; left: -2.5rem;">Infraestructura</span>
+                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                                <div class="layer-label absolute -top-44 left-1/2 -translate-x-1/2 text-slate-800 text-sm font-semibold">
+                                    Presentación
+                                </div>
+                                <div class="layer-label absolute -top-32 left-1/2 -translate-x-1/2 text-slate-800 text-sm font-semibold">
+                                    Infraestructura
+                                </div>
+                                <div class="layer-label absolute -top-20 left-1/2 -translate-x-1/2 text-slate-800 text-sm font-semibold">
+                                    Aplicación
+                                </div>
                             </div>
                         </div>
                     </div>
